@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sol's RNG fanmade by OP7</title>
+    <!-- Tailwind CSS for modern responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
+        body { font-family: 'Outfit', sans-serif; background: #090a0f; color: #f3f4f6; overflow-x: hidden; user-select: none; }
+        .bg-glass { background: rgba(18, 24, 38, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .btn-glow:hover { box-shadow: 0 0 25px rgba(99, 102, 241, 0.6); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 9999px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-slate-950 text-slate-100">
+
+    <header class="w-full bg-glass sticky top-0 z-50 px-4 py-3 border-b border-slate-800 flex justify-between items-center shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-indigo-600/30 rounded-xl border border-indigo-500/50">
+                <i class="fa-solid fa-gem text-indigo-400 text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-lg md:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-500">
+                    SOL'S RNG SIMULATOR
+                </h1>
+                <p class="text-xs text-slate-400" id="headerSub">Sol's RNG fanmade by OP7</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div id="weatherBadge" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-amber-400">
+                <i class="fa-solid fa-cloud-sun"></i> <span id="currentWeatherText">Normal Weather</span>
+            </div>
+            <!-- Progress Import / Export Buttons -->
+            <div class="flex items-center gap-1.5">
+                <button onclick="exportProgress()" class="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition" title="Export Progress">
+                    <i class="fa-solid fa-download text-indigo-400"></i> <span id="btnExportText">Export</span>
+                </button>
+                <button onclick="triggerImport()" class="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition" title="Import Progress">
+                    <i class="fa-solid fa-upload text-emerald-400"></i> <span id="btnImportText">Import</span>
+                </button>
+                <input type="file" id="importFile" accept=".json" onchange="importProgress(event)" class="hidden">
+            </div>
+            <div class="relative">
+                <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-slate-900/90 text-slate-200 text-xs md:text-sm font-semibold py-1.5 px-3 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500 transition cursor-pointer">
+                    <option value="vi">🇻🇳 Tiếng Việt</option>
+                    <option value="en">🇺🇸 English</option>
+                    <option value="ph">🇵🇭 Filipino</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+        <!-- LEFT PANEL: STATS & 10 TIERS GEAR WORKSHOP -->
+        <section class="lg:col-span-5 flex flex-col gap-5">
+            
+            <!-- Stats Overview Card -->
+            <div class="bg-glass rounded-2xl p-5 shadow-xl flex flex-col gap-4 relative overflow-hidden">
+                <h2 class="text-xs uppercase tracking-widest text-slate-400 font-bold flex items-center gap-2" id="lblStats">
+                    <i class="fa-solid fa-chart-simple text-indigo-400"></i> Stats Overview
+                </h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                        <span class="text-xs text-slate-400 block" id="lblTotalRolls">Total Rolls</span>
+                        <span id="statRolls" class="text-xl font-bold text-indigo-300">0</span>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                        <span class="text-xs text-slate-400 block" id="lblLuckMultiplier">Luck Multiplier</span>
+                        <span id="statLuck" class="text-xl font-bold text-emerald-400">+0% (1.0x)</span>
+                    </div>
+                    <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 col-span-2">
+                        <span class="text-xs text-slate-400 block" id="lblEquippedGear">Equipped Gear</span>
+                        <span id="statGear" class="text-sm font-semibold text-amber-300 truncate block">None</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GEAR WORKSHOP (10 TIERS) -->
+            <div class="bg-glass rounded-2xl p-5 shadow-xl flex flex-col gap-4 flex-grow border border-slate-800">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 gap-2">
+                    <h2 class="text-xs uppercase tracking-widest text-slate-400 font-bold flex items-center gap-2 shrink-0 truncate" id="lblWorkshop">
+                        <i class="fa-solid fa-hammer text-amber-400"></i> Jake's Workshop (10 Tiers)
+                    </h2>
+                    <span class="text-[11px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full shrink-0" id="lblCraftHeader">Gear Tiers</span>
+                </div>
+                <div id="craftList" class="flex flex-col gap-3 max-h-[380px] overflow-y-auto pr-1">
+                    <!-- Dynamic Gears inserted here -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- CENTER & RIGHT PANEL: RNG ARENA, AFK JUKEBOX & INVENTORY -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+
+            <!-- RNG Roller Arena -->
+            <div class="bg-glass rounded-2xl p-6 md:p-8 shadow-2xl flex flex-col items-center justify-center min-h-[320px] text-center relative overflow-hidden border border-slate-800">
+                <div id="auraBackdrop" class="absolute inset-0 bg-indigo-900/10 transition-all duration-700 pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col items-center gap-2">
+                    <span id="auraRarity" class="text-xs font-semibold tracking-widest uppercase text-slate-400 bg-slate-900/90 border border-slate-800 px-3 py-1 rounded-full">
+                        Ready to Roll
+                    </span>
+                    <h1 id="auraTitle" class="text-3xl md:text-5xl font-extrabold tracking-tight my-2 text-slate-100 transition-all duration-300">
+                        Press Roll Button
+                    </h1>
+                    <p id="auraChance" class="text-sm md:text-base text-slate-400 font-medium h-6">
+                        Chance: --
+                    </p>
+                </div>
+
+                <div class="mt-6 relative z-10 flex items-center gap-4">
+                    <button id="btnRoll" onclick="rollAura()" class="btn-glow px-10 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white font-extrabold text-lg rounded-2xl shadow-xl hover:opacity-95 active:scale-95 transition-all duration-150 flex items-center gap-3">
+                        <i class="fa-solid fa-dice text-2xl"></i> <span id="btnRollText">ROLL AURA</span>
+                    </button>
+                    <button id="btnAuto" onclick="toggleAutoRoll()" class="px-5 py-4 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 font-bold text-sm rounded-2xl transition">
+                        <i class="fa-solid fa-rotate text-lg" id="iconAuto"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- AFK JUKEBOX & UNLIMITED BACKPACK -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- AFK JUKEBOX -->
+                <div class="bg-glass rounded-2xl p-5 shadow-xl border border-slate-800 flex flex-col gap-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3 gap-2">
+                        <h2 class="text-xs uppercase tracking-widest text-slate-400 font-bold flex items-center gap-2 shrink-0 truncate">
+                            <i class="fa-solid fa-compact-disc text-pink-400 animate-spin"></i> <span id="lblAfkJukeboxTitle">AFK Jukebox</span>
+                        </h2>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button onclick="toggleShuffle()" id="btnShuffle" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 py-1 rounded-lg transition font-semibold flex items-center gap-1" title="Shuffle">
+                                <i class="fa-solid fa-shuffle"></i>
+                            </button>
+                            <button onclick="openAddTrackModal()" class="text-xs bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/30 px-2.5 py-1 rounded-lg transition font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-plus"></i> <span id="lblAddSong">Add Song</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-3">
+                        <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-3">
+                            <div class="flex items-center justify-between">
+                                <div class="overflow-hidden pr-2">
+                                    <span class="text-[10px] text-slate-400 uppercase tracking-widest block" id="lblCurrentTrack">Now Playing</span>
+                                    <span id="trackTitle" class="text-sm font-bold text-pink-300 truncate block">No track selected</span>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button onclick="prevTrack()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+                                        <i class="fa-solid fa-backward-step text-xs"></i>
+                                    </button>
+                                    <button id="btnPlayMusic" onclick="toggleMusic()" class="w-10 h-10 rounded-full bg-pink-600 hover:bg-pink-500 text-white flex items-center justify-center shadow-md transition">
+                                        <i class="fa-solid fa-play" id="iconPlay"></i>
+                                    </button>
+                                    <button onclick="nextTrack()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition">
+                                        <i class="fa-solid fa-forward-step text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1" id="trackList"></div>
+                    </div>
+                </div>
+
+                <!-- UNLIMITED BACKPACK -->
+                <div class="bg-glass rounded-2xl p-5 shadow-xl border border-slate-800 flex flex-col gap-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3 gap-2">
+                        <h2 class="text-xs uppercase tracking-widest text-slate-400 font-bold flex items-center gap-2 shrink-0 truncate" id="lblBackpack">
+                            <i class="fa-solid fa-box-archive text-emerald-400"></i> Aura Storage
+                        </h2>
+                        <button onclick="sortInventory()" class="text-xs bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-lg transition font-semibold flex items-center gap-1 shrink-0" id="sortBtnText">
+                            <i class="fa-solid fa-arrow-down-wide-short"></i> Sort Rarity
+                        </button>
+                    </div>
+                    <div id="backpackGrid" class="flex flex-col gap-2.5 max-h-[220px] overflow-y-auto pr-1">
+                        <!-- Dynamic Inventory Items -->
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <div id="songModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl flex flex-col gap-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-pink-400 uppercase tracking-wider" id="modalSongTitle">Upload Audio Track</h3>
+                <button onclick="closeAddTrackModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1 font-semibold" id="lblSongName">Song Name</label>
+                    <input type="text" id="inputSongName" placeholder="e.g. Celestial Anthem..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-pink-500">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1 font-semibold" id="lblSongFile">Select Audio File (MP3, WAV, OGG)</label>
+                    <input type="file" id="inputSongFile" accept="audio/*" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-pink-600 file:text-white hover:file:bg-pink-500 cursor-pointer">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeAddTrackModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition" id="btnCancelSong">Cancel</button>
+                <button onclick="saveNewSong()" class="px-4 py-2 bg-pink-600 hover:bg-pink-500 text-white text-xs font-bold rounded-xl transition" id="btnSaveSong">Upload Song</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden audio element for custom file playback -->
+    <audio id="audioPlayer" loop style="display:none;"></audio>
+
+    <script>
+        const translations = {
+            vi: {
+                subTitle: "Xưởng 10 Tiers Gear & Bộ sưu tập Aura đầy đủ",
+                stats: "Tổng quan chỉ số",
+                totalRolls: "Tổng lượt quay",
+                luck: "Hệ số May mắn",
+                equippedGear: "Gear đang trang bị",
+                workshop: "Xưởng Jake's Workshop (10 Tiers)",
+                craftHeader: "Danh sách Gear",
+                rollBtn: "QUAY AURA",
+                afkJukebox: "Hộp Nhạc AFK",
+                nowPlaying: "Đang phát",
+                addSong: "Thêm bài",
+                backpack: "Kho Aura",
+                sortBtn: "Sắp xếp độ hiếm",
+                ready: "Sẵn sàng quay",
+                chance: "Tỷ lệ",
+                none: "Không",
+                craftBtn: "Chế tạo",
+                ownedBtn: "Đã sở hữu",
+                equipBtn: "Trang bị",
+                reqTitle: "Nguyên liệu yêu cầu:",
+                modalSongTitle: "Tải lên tệp âm thanh AFK",
+                lblSongName: "Tên bài hát",
+                lblSongFile: "Chọn tệp âm thanh (MP3, WAV, OGG)",
+                btnCancelSong: "Hủy",
+                btnSaveSong: "Tải lên",
+                exportText: "Xuất file",
+                importText: "Nhập file",
+                importSuccess: "Nhập tiến độ thành công!",
+                importError: "Tệp tiến độ không hợp lệ!"
+            },
+            en: {
+                subTitle: "10-Tier Gear Workshop & Full Auras",
+                stats: "Stats Overview",
+                totalRolls: "Total Rolls",
+                luck: "Luck Multiplier",
+                equippedGear: "Equipped Gear",
+                workshop: "Jake's Workshop (10 Tiers)",
+                craftHeader: "Gear Tiers",
+                rollBtn: "ROLL AURA",
+                afkJukebox: "AFK Jukebox",
+                nowPlaying: "Now Playing",
+                addSong: "Add Song",
+                backpack: "Aura Storage",
+                sortBtn: "Sort Rarity",
+                ready: "Ready to Roll",
+                chance: "Chance",
+                none: "None",
+                craftBtn: "Craft",
+                ownedBtn: "Owned",
+                equipBtn: "Equip",
+                reqTitle: "Requirements:",
+                modalSongTitle: "Upload Audio Track",
+                lblSongName: "Song Name",
+                lblSongFile: "Select Audio File (MP3, WAV, OGG)",
+                btnCancelSong: "Cancel",
+                btnSaveSong: "Upload Song",
+                exportText: "Export",
+                importText: "Import",
+                importSuccess: "Progress imported successfully!",
+                importError: "Invalid progress file!"
+            },
+            ph: {
+                subTitle: "10-Tier Gear Workshop at Lahat ng Auras",
+                stats: "Mga Estadistika",
+                totalRolls: "Kabuuang Roll",
+                luck: "Luck Multiplier",
+                equippedGear: "Suot na Gear",
+                workshop: "Jake's Workshop (10 Tiers)",
+                craftHeader: "Listahan ng Gear",
+                rollBtn: "I-ROLL ANG AURA",
+                afkJukebox: "AFK Jukebox",
+                nowPlaying: "Kasalukuyang Tumutugtog",
+                addSong: "Magdagdag",
+                backpack: "Imbakan ng Aura",
+                sortBtn: "Ayusin ang Rarity",
+                ready: "Handa nang mag-roll",
+                chance: "Tsansa",
+                none: "Wala",
+                craftBtn: "Gawin",
+                ownedBtn: "Mayroon Na",
+                equipBtn: "Suotin",
+                reqTitle: "Mga Kailangan:",
+                modalSongTitle: "Mag-upload ng Audio File",
+                lblSongName: "Pangalan ng Kanta",
+                lblSongFile: "Pumili ng Audio File (MP3, WAV, OGG)",
+                btnCancelSong: "Kanselahin",
+                btnSaveSong: "Mag-upload",
+                exportText: "I-export",
+                importText: "I-import",
+                importSuccess: "Matagumpay na nai-import ang progress!",
+                importError: "Maling progress file!"
+            }
+        };
+
+        let currentLang = 'vi';
+        let sortDescending = true;
+
+        const AURAS = [
+            // BASIC (1/1 - 1/999)
+            { id: "Common", name: "Common", chance: 2, tier: "BASIC", color: "#94a3b8" },
+            { id: "Uncommon", name: "Uncommon", chance: 4, tier: "BASIC", color: "#64748b" },
+            { id: "Good", name: "Good", chance: 5, tier: "BASIC", color: "#38bdf8" },
+            { id: "Natural", name: "Natural", chance: 8, tier: "BASIC", color: "#4ade80" },
+            { id: "Rare", name: "Rare", chance: 16, tier: "BASIC", color: "#3b82f6" },
+            { id: "Divinus", name: "Divinus", chance: 32, tier: "BASIC", color: "#60a5fa" },
+            { id: "Crystallized", name: "Crystallized", chance: 64, tier: "BASIC", color: "#06b6d4" },
+            { id: "Rage", name: "Rage", chance: 128, tier: "BASIC", color: "#ef4444" },
+            { id: "Topaz", name: "Topaz", chance: 150, tier: "BASIC", color: "#f59e0b" },
+            { id: "Ruby", name: "Ruby", chance: 350, tier: "BASIC", color: "#dc2626" },
+            { id: "Forbidden", name: "Forbidden", chance: 403, tier: "BASIC", color: "#78716c" },
+            { id: "Emerald", name: "Emerald", chance: 500, tier: "BASIC", color: "#10b981" },
+            { id: "Gilded", name: "Gilded", chance: 512, tier: "BASIC", color: "#fbbf24" },
+            { id: "Ink", name: "Ink", chance: 700, tier: "BASIC", color: "#475569" },
+            { id: "Jackpot", name: "Jackpot", chance: 777, tier: "BASIC", color: "#eab308" },
+            { id: "Sapphire", name: "Sapphire", chance: 800, tier: "BASIC", color: "#2563eb" },
+            { id: "Aquamarine", name: "Aquamarine / Wind", chance: 900, tier: "BASIC", color: "#06b6d4" },
+
+            // EPIC (1/1,000 - 1/9,999)
+            { id: "Diaboli", name: "Diaboli", chance: 1004, tier: "EPIC", color: "#991b1b" },
+            { id: "Precious", name: "Precious", chance: 1024, tier: "EPIC", color: "#facc15" },
+            { id: "Atomic", name: "Atomic", chance: 1180, tier: "EPIC", color: "#38bdf8" },
+            { id: "Magnetic", name: "Magnetic", chance: 2048, tier: "EPIC", color: "#94a3b8" },
+            { id: "Glacier", name: "Glacier", chance: 2304, tier: "EPIC", color: "#e0f2fe" },
+            { id: "PLAYER", name: "PLAYER", chance: 3000, tier: "EPIC", color: "#a855f7" },
+            { id: "Bleeding", name: "Bleeding", chance: 4444, tier: "EPIC", color: "#b91c1c" },
+            { id: "Flutter", name: "Flutter / TARGETED", chance: 5000, tier: "EPIC", color: "#ec4899" },
+            { id: "Flushed", name: "Flushed", chance: 6900, tier: "EPIC", color: "#f97316" },
+            { id: "HAZARD", name: "HAZARD", chance: 7000, tier: "EPIC", color: "#84cc16" },
+            { id: "Quartz", name: "Quartz", chance: 8192, tier: "EPIC", color: "#f3e8ff" },
+            { id: "LostSoul", name: "Lost Soul", chance: 9200, tier: "EPIC", color: "#64748b" },
+
+            // UNIQUE (1/10,000 - 1/99,998)
+            { id: "Undead", name: "Undead / Corrosive", chance: 12000, tier: "UNIQUE", color: "#15803d" },
+            { id: "RageHeated", name: "Rage : Heated", chance: 12800, tier: "UNIQUE", color: "#b91c1c" },
+            { id: "LEAK", name: "LEAK", chance: 14000, tier: "UNIQUE", color: "#06b6d4" },
+            { id: "Powered", name: "Powered", chance: 16384, tier: "UNIQUE", color: "#eab308" },
+            { id: "Crowned", name: "Crowned", chance: 20000, tier: "UNIQUE", color: "#ca8a04" },
+            { id: "Aquatic", name: "Aquatic", chance: 40000, tier: "UNIQUE", color: "#0284c7" },
+            { id: "Solar", name: "Solar", chance: 50000, tier: "UNIQUE", color: "#f59e0b" },
+            { id: "Lunar", name: "Lunar", chance: 50000, tier: "UNIQUE", color: "#a855f7" },
+            { id: "Starlight", name: "STARLIGHT / Star Rider", chance: 50000, tier: "UNIQUE", color: "#6366f1" },
+            { id: "FlushedLobotomy", name: "Flushed : Lobotomy", chance: 69000, tier: "UNIQUE", color: "#ea580c" },
+            { id: "HazardRays", name: "HAZARD : RAYS", chance: 70000, tier: "UNIQUE", color: "#65a30d" },
+            { id: "Nautilus", name: "Nautilus", chance: 70000, tier: "UNIQUE", color: "#0e7490" },
+            { id: "Permafrost", name: "Permafrost", chance: 73500, tier: "UNIQUE", color: "#93c5fd" },
+            { id: "Stormal", name: "Stormal", chance: 90000, tier: "UNIQUE", color: "#475569" },
+
+            // LEGENDARY (1/99,999 - 1/999,998)
+            { id: "Exotic", name: "Exotic", chance: 99999, tier: "LEGENDARY", color: "#ec4899" },
+            { id: "DiaboliVoid", name: "DIABOLI : VOID", chance: 100400, tier: "LEGENDARY", color: "#881337" },
+            { id: "Comet", name: "COMET", chance: 120000, tier: "LEGENDARY", color: "#3b82f6" },
+            { id: "Jade", name: "Jade", chance: 125000, tier: "LEGENDARY", color: "#10b981" },
+            { id: "Spectre", name: "Spectre", chance: 140000, tier: "LEGENDARY", color: "#a855f7" },
+            { id: "Jazz", name: "Jazz", chance: 160000, tier: "LEGENDARY", color: "#f97316" },
+            { id: "Aether", name: "Aether", chance: 180000, tier: "LEGENDARY", color: "#06b6d4" },
+            { id: "Bounded", name: "BOUNDED", chance: 200000, tier: "LEGENDARY", color: "#4338ca" },
+            { id: "Celestial", name: "Celestial", chance: 350000, tier: "LEGENDARY", color: "#818cf8" },
+            { id: "Vortex", name: "Vortex", chance: 399999, tier: "LEGENDARY", color: "#0f172a" },
+            { id: "UndeadDevil", name: "UNDEAD : DEVIL", chance: 666666, tier: "LEGENDARY", color: "#14532d" },
+            { id: "Kyawthuite", name: "Kyawthuite", chance: 850000, tier: "LEGENDARY", color: "#dc2626" },
+
+            // MYTHIC (1/1,000,000 - 1/9,999,999)
+            { id: "MagneticReverse", name: "Magnetic : Reverse Polarity", chance: 1024000, tier: "MYTHIC", color: "#64748b" },
+            { id: "Undefined", name: "Undefined", chance: 1111000, tier: "MYTHIC", color: "#f59e0b" },
+            { id: "Astral", name: "Astral", chance: 1336000, tier: "MYTHIC", color: "#7c3aed" },
+            { id: "Poseidon", name: "Poseidon", chance: 4000000, tier: "MYTHIC", color: "#0284c7" },
+            { id: "Zeus", name: "Zeus", chance: 4500000, tier: "MYTHIC", color: "#eab308" },
+            { id: "Galaxy", name: "Galaxy / Solar : Solstice", chance: 5000000, tier: "MYTHIC", color: "#c084fc" },
+            { id: "Twilight", name: "Twilight", chance: 6000000, tier: "MYTHIC", color: "#475569" },
+            { id: "Hades", name: "Hades", chance: 6666666, tier: "MYTHIC", color: "#ea580c" },
+            { id: "CelestialDivine", name: "Celestial : Divine", chance: 7000000, tier: "MYTHIC", color: "#312e81" },
+
+            // EXALTED (1/10,000,000 - 1/99,999,998)
+            { id: "StarlightKunzite", name: "Starlight : Kunzite", chance: 10000000, tier: "EXALTED", color: "#4f46e5" },
+            { id: "Sailor", name: "Sailor", chance: 12000000, tier: "EXALTED", color: "#0ea5e9" },
+            { id: "Glitch", name: "Glitch", chance: 12210110, tier: "EXALTED", color: "#22c55e" },
+            { id: "ArcaneLegacy", name: "Arcane : Legacy", chance: 15000000, tier: "EXALTED", color: "#312e81" },
+            { id: "Chromatic", name: "Chromatic", chance: 20000000, tier: "EXALTED", color: "#f43f5e" },
+            { id: "ArcaneDark", name: "Arcane : Dark", chance: 30000000, tier: "EXALTED", color: "#1e1b4b" },
+            { id: "Ethereal", name: "Ethereal", chance: 35000000, tier: "EXALTED", color: "#0d9488" },
+            { id: "ExoticApex", name: "Exotic : Apex", chance: 49999500, tier: "EXALTED", color: "#db2777" },
+            { id: "Matrix", name: "Matrix", chance: 50000000, tier: "EXALTED", color: "#84cc16" },
+            { id: "SailorFlying", name: "Sailor : Flying Dutchman", chance: 80000000, tier: "EXALTED", color: "#0369a1" },
+
+            // GLORIOUS (1/99,999,999 - 1/999,999,998)
+            { id: "ChromaticGenesis", name: "Chromatic : Genesis", chance: 99999999, tier: "GLORIOUS", color: "#f43f5e" },
+            { id: "StarscourgeRadiant", name: "Starscourge : Radiant", chance: 100000000, tier: "GLORIOUS", color: "#ca8a04" },
+            { id: "Overture", name: "Overture", chance: 150000000, tier: "GLORIOUS", color: "#d946ef" },
+            { id: "Impeached", name: "Impeached", chance: 200000000, tier: "GLORIOUS", color: "#b91c1c" },
+            { id: "Oppression", name: "Oppression", chance: 220000000, tier: "GLORIOUS", color: "#0f172a" },
+            { id: "OvertureHistory", name: "Overture : History / Bloodlust", chance: 300000000, tier: "GLORIOUS", color: "#9333ea" },
+            { id: "Atlas", name: "Atlas", chance: 360000000, tier: "GLORIOUS", color: "#0284c7" },
+            { id: "AbyssalHunter", name: "Abyssal Hunter", chance: 400000000, tier: "GLORIOUS", color: "#1e3a8a" },
+            { id: "Gargantua", name: "Gargantua", chance: 430000000, tier: "GLORIOUS", color: "#581c87" },
+            { id: "Apostolos", name: "Apostolos", chance: 444000000, tier: "GLORIOUS", color: "#713f12" },
+            { id: "RuinsWithered", name: "Ruins : Withered", chance: 800000000, tier: "GLORIOUS", color: "#3f3f46" },
+            { id: "Aegis", name: "Aegis", chance: 825000000, tier: "GLORIOUS", color: "#e0e7ff" },
+
+            // TRANSCENDENT & SECRET (> 1 Billion)
+            { id: "Sovereign", name: "Sovereign", chance: 1000000000, tier: "TRANSCENDENT", color: "#fb7185" },
+            { id: "Archangel", name: "Archangel", chance: 1000000000, tier: "TRANSCENDENT", color: "#f8fafc" },
+            { id: "Symphony", name: "Symphony", chance: 1200000000, tier: "TRANSCENDENT", color: "#c084fc" }
+        ];
+
+        const GEARS = [
+            { id: "LuckGlove", name: "Luck Glove", tier: "Tier 1", luckBonus: 0.25, recipe: { Divinus: 2, Crystallized: 1, Rare: 3 } },
+            { id: "DesireGlove", name: "Desire Glove", tier: "Tier 1", luckBonus: 0.30, recipe: { Rage: 1, Ruby: 1, Diaboli: 1, Bleeding: 1 } },
+            { id: "AquaDevice", name: "Aqua Device", tier: "Tier 2", luckBonus: 0.40, recipe: { Aquamarine: 1, Nautilus: 1 } },
+            { id: "JackpotGauntlet", name: "Jackpot Gauntlet", tier: "Tier 3", luckBonus: 0.77, recipe: { Jackpot: 5, Gilded: 5, Rare: 10 } },
+            { id: "ExoGauntlet", name: "Exo Gauntlet", tier: "Tier 3", luckBonus: 1.00, recipe: { Exotic: 1, Undead: 1, Magnetic: 2 } },
+            { id: "SubzeroDevice", name: "Subzero Device", tier: "Tier 4", luckBonus: 1.50, recipe: { Permafrost: 1, Glacier: 5, Magnetic: 5 } },
+            { id: "GalacticDevice", name: "Galactic Device", tier: "Tier 5", luckBonus: 2.50, recipe: { Galaxy: 1, Comet: 2, Sapphire: 5, Solar: 1, Lunar: 1 } },
+            { id: "ExoflexDevice", name: "Exoflex Device", tier: "Tier 6", luckBonus: 3.20, recipe: { Exotic: 5 } },
+            { id: "Ragnaroker", name: "Ragnaröker", tier: "Tier 7", luckBonus: 4.55, recipe: { Zeus: 1, Hades: 1, Poseidon: 1 } },
+            { id: "GenesisDrive", name: "Genesis Drive", tier: "Tier 10", luckBonus: 12.00, recipe: { ChromaticGenesis: 1, Matrix: 1, Hades: 1 } }
+        ];
+
+        let state = {
+            rolls: 0,
+            luckMultiplier: 1.0,
+            equippedGear: null,
+            inventory: {},
+            craftedGears: [],
+            isAuto: false,
+            autoInterval: null,
+            playingTrackIdx: null,
+            isShuffle: false,
+            customTracks: []
+        };
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+
+            const headerSub = document.getElementById('headerSub');
+            if (headerSub) headerSub.innerText = t.subTitle;
+
+            const lblStats = document.getElementById('lblStats');
+            if (lblStats) lblStats.innerHTML = `<i class="fa-solid fa-chart-simple text-indigo-400"></i> ${t.stats}`;
+
+            const lblTotalRolls = document.getElementById('lblTotalRolls');
+            if (lblTotalRolls) lblTotalRolls.innerText = t.totalRolls;
+
+            const lblLuckMultiplier = document.getElementById('lblLuckMultiplier');
+            if (lblLuckMultiplier) lblLuckMultiplier.innerText = t.luck;
+
+            const lblEquippedGear = document.getElementById('lblEquippedGear');
+            if (lblEquippedGear) lblEquippedGear.innerText = t.equippedGear;
+
+            const lblWorkshop = document.getElementById('lblWorkshop');
+            if (lblWorkshop) lblWorkshop.innerHTML = `<i class="fa-solid fa-hammer text-amber-400"></i> ${t.workshop}`;
+
+            const lblCraftHeader = document.getElementById('lblCraftHeader');
+            if (lblCraftHeader) lblCraftHeader.innerText = t.craftHeader;
+
+            const btnRollText = document.getElementById('btnRollText');
+            if (btnRollText) btnRollText.innerText = t.rollBtn;
+
+            const lblAfkJukeboxTitle = document.getElementById('lblAfkJukeboxTitle');
+            if (lblAfkJukeboxTitle) lblAfkJukeboxTitle.innerText = t.afkJukebox;
+
+            const lblAddSong = document.getElementById('lblAddSong');
+            if (lblAddSong) lblAddSong.innerText = t.addSong;
+
+            const lblCurrentTrack = document.getElementById('lblCurrentTrack');
+            if (lblCurrentTrack) lblCurrentTrack.innerText = t.nowPlaying;
+
+            const lblBackpack = document.getElementById('lblBackpack');
+            if (lblBackpack) lblBackpack.innerHTML = `<i class="fa-solid fa-box-archive text-emerald-400"></i> ${t.backpack}`;
+
+            const sortBtnText = document.getElementById('sortBtnText');
+            if (sortBtnText) sortBtnText.innerHTML = `<i class="fa-solid fa-arrow-down-wide-short"></i> ${t.sortBtn}`;
+            
+            const modalSongTitle = document.getElementById('modalSongTitle');
+            if (modalSongTitle) modalSongTitle.innerText = t.modalSongTitle;
+
+            const lblSongName = document.getElementById('lblSongName');
+            if (lblSongName) lblSongName.innerText = t.lblSongName;
+
+            const lblSongFile = document.getElementById('lblSongFile');
+            if (lblSongFile) lblSongFile.innerText = t.lblSongFile;
+
+            const btnCancelSong = document.getElementById('btnCancelSong');
+            if (btnCancelSong) btnCancelSong.innerText = t.btnCancelSong;
+
+            const btnSaveSong = document.getElementById('btnSaveSong');
+            if (btnSaveSong) btnSaveSong.innerText = t.btnSaveSong;
+
+            const btnExportText = document.getElementById('btnExportText');
+            if (btnExportText) btnExportText.innerText = t.exportText;
+
+            const btnImportText = document.getElementById('btnImportText');
+            if (btnImportText) btnImportText.innerText = t.importText;
+
+            renderGears();
+            renderInventory();
+            renderJukebox();
+        }
+
+        // Export progress to a JSON file
+        function exportProgress() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `sols_rng_progress_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // Trigger file input dialog for importing progress
+        function triggerImport() {
+            const fileInput = document.getElementById('importFile');
+            if (fileInput) fileInput.click();
+        }
+
+        // Import progress from uploaded JSON file
+        function importProgress(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    if (importedState && typeof importedState.rolls === 'number' && importedState.inventory) {
+                        state.rolls = importedState.rolls || 0;
+                        state.luckMultiplier = importedState.luckMultiplier || 1.0;
+                        state.equippedGear = importedState.equippedGear || null;
+                        state.inventory = importedState.inventory || {};
+                        state.craftedGears = importedState.craftedGears || [];
+                        state.customTracks = importedState.customTracks || [];
+                        
+                        // Update UI stats
+                        const statRolls = document.getElementById('statRolls');
+                        if (statRolls) statRolls.innerText = state.rolls.toLocaleString();
+
+                        if (state.equippedGear) {
+                            const gear = GEARS.find(g => g.id === state.equippedGear);
+                            if (gear) {
+                                const statGear = document.getElementById('statGear');
+                                if (statGear) statGear.innerText = `${gear.name} (${gear.tier})`;
+
+                                const statLuck = document.getElementById('statLuck');
+                                if (statLuck) statLuck.innerText = `+${gear.luckBonus * 100}% (${state.luckMultiplier.toFixed(1)}x)`;
+                            }
+                        } else {
+                            const statGear = document.getElementById('statGear');
+                            if (statGear) statGear.innerText = translations[currentLang].none;
+
+                            const statLuck = document.getElementById('statLuck');
+                            if (statLuck) statLuck.innerText = "+0% (1.0x)";
+                        }
+
+                        renderInventory();
+                        renderGears();
+                        renderJukebox();
+                        alert(translations[currentLang].importSuccess);
+                    } else {
+                        alert(translations[currentLang].importError);
+                    }
+                } catch (err) {
+                    alert(translations[currentLang].importError);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function sortInventory() {
+            sortDescending = !sortDescending;
+            renderInventory();
+        }
+
+        function rollAura() {
+            state.rolls++;
+            document.getElementById('statRolls').innerText = state.rolls.toLocaleString();
+
+            let rand = Math.random() * 1000000000;
+            let effectiveRoll = rand / state.luckMultiplier;
+
+            let selectedAura = AURAS[0];
+            for (let i = AURAS.length - 1; i >= 0; i--) {
+                if (effectiveRoll <= (1000000000 / AURAS[i].chance)) {
+                    selectedAura = AURAS[i];
+                    break;
+                }
+            }
+
+            state.inventory[selectedAura.id] = (state.inventory[selectedAura.id] || 0) + 1;
+
+            const auraTitle = document.getElementById('auraTitle');
+            const auraRarity = document.getElementById('auraRarity');
+            const auraChance = document.getElementById('auraChance');
+            const auraBackdrop = document.getElementById('auraBackdrop');
+
+            auraTitle.innerText = selectedAura.name;
+            auraTitle.style.color = selectedAura.color;
+            auraRarity.innerText = `${selectedAura.tier} — 1 in ${selectedAura.chance.toLocaleString()}`;
+            auraRarity.style.borderColor = selectedAura.color;
+            auraChance.innerText = translations[currentLang].chance + `: 1 / ${selectedAura.chance.toLocaleString()}`;
+            auraBackdrop.style.background = `${selectedAura.color}15`;
+
+            renderInventory();
+            renderGears();
+        }
+
+        function toggleAutoRoll() {
+            state.isAuto = !state.isAuto;
+            const btnAuto = document.getElementById('btnAuto');
+            const iconAuto = document.getElementById('iconAuto');
+
+            if (state.isAuto) {
+                btnAuto.classList.add('bg-indigo-600', 'text-white');
+                iconAuto.classList.add('fa-spin');
+                state.autoInterval = setInterval(() => {
+                    rollAura();
+                }, 150);
+            } else {
+                btnAuto.classList.remove('bg-indigo-600', 'text-white');
+                iconAuto.classList.remove('fa-spin');
+                clearInterval(state.autoInterval);
+            }
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById('backpackGrid');
+            grid.innerHTML = '';
+
+            let sortedAuras = Object.keys(state.inventory).map(id => {
+                const auraInfo = AURAS.find(a => a.id === id) || { name: id, chance: 1, tier: 'BASIC', color: '#fff' };
+                return { id, count: state.inventory[id], ...auraInfo };
+            });
+
+            sortedAuras.sort((a, b) => {
+                return sortDescending ? (b.chance - a.chance) : (a.chance - b.chance);
+            });
+
+            if (sortedAuras.length === 0) {
+                grid.innerHTML = `<div class="text-xs text-slate-500 text-center py-6">No auras collected yet. Start rolling!</div>`;
+                return;
+            }
+
+            sortedAuras.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-xl flex items-center justify-between shadow-sm';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${item.color};"></span>
+                        <div class="truncate">
+                            <span class="text-xs font-bold block truncate" style="color: ${item.color};">${item.name}</span>
+                            <span class="text-[10px] text-slate-400">${item.tier} • 1/${item.chance.toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <span class="text-xs font-extrabold bg-slate-800 px-2.5 py-1 rounded-lg text-slate-200 shrink-0">x${item.count.toLocaleString()}</span>
+                `;
+                grid.appendChild(row);
+            });
+        }
+
+        function renderGears() {
+            const craftList = document.getElementById('craftList');
+            craftList.innerHTML = '';
+            const t = translations[currentLang];
+
+            GEARS.forEach(gear => {
+                const isOwned = state.craftedGears.includes(gear.id);
+                const isEquipped = state.equippedGear === gear.id;
+
+                let canCraft = true;
+                let reqHtml = '';
+                for (let reqId in gear.recipe) {
+                    const needed = gear.recipe[reqId];
+                    const owned = state.inventory[reqId] || 0;
+                    const hasEnough = owned >= needed;
+                    if (!hasEnough) canCraft = false;
+
+                    const auraObj = AURAS.find(a => a.id === reqId) || { name: reqId, color: '#ccc' };
+                    reqHtml += `<div class="text-[11px] flex items-center gap-1.5 ${hasEnough ? 'text-emerald-400' : 'text-rose-400'}">
+                        <i class="fa-solid ${hasEnough ? 'fa-check' : 'fa-xmark'}"></i>
+                        <span style="color: ${auraObj.color};">${auraObj.name}</span>: ${owned}/${needed}
+                    </div>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl flex flex-col gap-2.5';
+                
+                let actionBtn = '';
+                if (isEquipped) {
+                    actionBtn = `<span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-lg font-bold">${t.ownedBtn}</span>`;
+                } else if (isOwned) {
+                    actionBtn = `<button onclick="equipGear('${gear.id}')" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg font-bold transition">${t.equipBtn}</button>`;
+                } else {
+                    actionBtn = `<button onclick="craftGear('${gear.id}')" ${canCraft ? '' : 'disabled'} class="text-xs px-3 py-1 rounded-lg font-bold transition ${canCraft ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer shadow-md' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}">${t.craftBtn}</button>`;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center gap-2">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">${gear.tier}</span>
+                            <h3 class="text-sm font-extrabold text-slate-100 mt-1">${gear.name}</h3>
+                            <p class="text-xs font-semibold text-emerald-400">+${gear.luckBonus * 100}% Luck Multiplier</p>
+                        </div>
+                        <div class="shrink-0">${actionBtn}</div>
+                    </div>
+                    <div class="bg-slate-950/80 p-2 rounded-lg border border-slate-800/80 flex flex-col gap-1">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">${t.reqTitle}</span>
+                        <div class="grid grid-cols-2 gap-x-2 gap-y-1">${reqHtml}</div>
+                    </div>
+                `;
+                craftList.appendChild(card);
+            });
+        }
+
+        function craftGear(gearId) {
+            const gear = GEARS.find(g => g.id === gearId);
+            if (!gear || state.craftedGears.includes(gearId)) return;
+
+            // Check requirements
+            for (let reqId in gear.recipe) {
+                if ((state.inventory[reqId] || 0) < gear.recipe[reqId]) return;
+            }
+
+            // Deduct requirements
+            for (let reqId in gear.recipe) {
+                state.inventory[reqId] -= gear.recipe[reqId];
+            }
+
+            state.craftedGears.push(gearId);
+            equipGear(gearId);
+            renderInventory();
+            renderGears();
+        }
+
+        function equipGear(gearId) {
+            const gear = GEARS.find(g => g.id === gearId);
+            if (!gear) return;
+
+            state.equippedGear = gearId;
+            state.luckMultiplier = 1.0 + gear.luckBonus;
+
+            document.getElementById('statGear').innerText = `${gear.name} (${gear.tier})`;
+            document.getElementById('statLuck').innerText = `+${gear.luckBonus * 100}% (${state.luckMultiplier.toFixed(1)}x)`;
+            renderGears();
+        }
+
+        // --- AFK JUKEBOX LOGIC ---
+        function openAddTrackModal() {
+            document.getElementById('songModal').classList.remove('hidden');
+        }
+
+        function closeAddTrackModal() {
+            document.getElementById('songModal').classList.add('hidden');
+            document.getElementById('inputSongName').value = '';
+            document.getElementById('inputSongFile').value = '';
+        }
+
+        function saveNewSong() {
+            const nameInput = document.getElementById('inputSongName').value.trim();
+            const fileInput = document.getElementById('inputSongFile');
+
+            if (!nameInput || fileInput.files.length === 0) {
+                alert("Please provide a song name and select an audio file.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const fileURL = URL.createObjectURL(file);
+
+            state.customTracks.push({ name: nameInput, url: fileURL });
+            closeAddTrackModal();
+            renderJukebox();
+
+            if (state.playingTrackIdx === null && state.customTracks.length === 1) {
+                playTrack(0);
+            }
+        }
+
+        function renderJukebox() {
+            const list = document.getElementById('trackList');
+            list.innerHTML = '';
+
+            if (state.customTracks.length === 0) {
+                list.innerHTML = `<div class="text-[11px] text-slate-500 text-center py-4">No custom tracks. Click "Add Song" to upload MP3/WAV files.</div>`;
+                return;
+            }
+
+            state.customTracks.forEach((track, idx) => {
+                const isPlaying = state.playingTrackIdx === idx;
+                const item = document.createElement('div');
+                item.className = `p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition ${isPlaying ? 'bg-pink-600/20 border-pink-500/50 text-pink-300' : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800'}`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden" onclick="playTrack(${idx})">
+                        <i class="fa-solid ${isPlaying ? 'fa-volume-high text-pink-400 animate-pulse' : 'fa-music text-slate-500'} text-xs"></i>
+                        <span class="text-xs font-bold truncate">${track.name}</span>
+                    </div>
+                    <button onclick="removeTrack(event, ${idx})" class="text-slate-500 hover:text-rose-400 p-1"><i class="fa-solid fa-trash text-xs"></i></button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function playTrack(idx) {
+            if (state.customTracks.length === 0) return;
+            state.playingTrackIdx = idx;
+            const track = state.customTracks[idx];
+
+            const audio = document.getElementById('audioPlayer');
+            audio.src = track.url;
+            audio.play().catch(e => console.log("Playback error:", e));
+
+            document.getElementById('trackTitle').innerText = track.name;
+            document.getElementById('iconPlay').className = "fa-solid fa-pause";
+            renderJukebox();
+        }
+
+        function toggleMusic() {
+            const audio = document.getElementById('audioPlayer');
+            const iconPlay = document.getElementById('iconPlay');
+
+            if (state.customTracks.length === 0) {
+                openAddTrackModal();
+                return;
+            }
+
+            if (state.playingTrackIdx === null) {
+                playTrack(0);
+                return;
+            }
+
+            if (audio.paused) {
+                audio.play();
+                iconPlay.className = "fa-solid fa-pause";
+            } else {
+                audio.pause();
+                iconPlay.className = "fa-solid fa-play";
+            }
+        }
+
+        function nextTrack() {
+            if (state.customTracks.length === 0) return;
+            let nextIdx = state.isShuffle ? Math.floor(Math.random() * state.customTracks.length) : ((state.playingTrackIdx + 1) % state.customTracks.length);
+            playTrack(nextIdx);
+        }
+
+        function prevTrack() {
+            if (state.customTracks.length === 0) return;
+            let prevIdx = state.isShuffle ? Math.floor(Math.random() * state.customTracks.length) : ((state.playingTrackIdx - 1 + state.customTracks.length) % state.customTracks.length);
+            playTrack(prevIdx);
+        }
+
+        function toggleShuffle() {
+            state.isShuffle = !state.isShuffle;
+            const btnShuffle = document.getElementById('btnShuffle');
+            if (state.isShuffle) {
+                btnShuffle.classList.add('bg-pink-600/30', 'text-pink-400', 'border-pink-500/50');
+            } else {
+                btnShuffle.classList.remove('bg-pink-600/30', 'text-pink-400', 'border-pink-500/50');
+            }
+        }
+
+        function removeTrack(e, idx) {
+            e.stopPropagation();
+            state.customTracks.splice(idx, 1);
+            if (state.playingTrackIdx === idx) {
+                document.getElementById('audioPlayer').pause();
+                state.playingTrackIdx = null;
+                document.getElementById('trackTitle').innerText = "No track selected";
+                document.getElementById('iconPlay').className = "fa-solid fa-play";
+            } else if (state.playingTrackIdx > idx) {
+                state.playingTrackIdx--;
+            }
+            renderJukebox();
+        }
+
+        window.onload = function() {
+            changeLanguage('vi');
+        };
+    </script>
+</body>
+</html>
